@@ -64,7 +64,7 @@ void loop() {
     Serial.print(humidity);
     Serial.print(" %, Điện áp khói: ");
     Serial.print(smokeVoltage);
-    Serial.println(" V");
+    Serial.println(" %");
 
     // Kiểm tra điều kiện phát hiện khói
     if (smokeVoltage > 0.7) { 
