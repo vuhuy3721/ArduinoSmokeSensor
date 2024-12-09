@@ -1,9 +1,15 @@
 #include <Wire.h>
 #include <Adafruit_AHTX0.h>
+#include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 
 // Cấu hình chân cho cảm biến khói (MP2)
-#define SMOKE_SENSOR_PIN A6 // Đầu vào ADC
+#define SMOKE_SENSOR_PIN A3 // Đầu vào ADC
 
+#define TX_PIN A6     // Chân A6 làm TX
+#define RX_PIN A7     // Chân A7 làm RX (không sử dụng nhưng cần khai báo)
+#define BUZZER_PIN D5 // Chân nối còi
+SoftwareSerial mySerial(TX_PIN, RX_PIN);
 // Khởi tạo đối tượng cảm biến AHT20
 Adafruit_AHTX0 aht;
 
@@ -19,7 +25,7 @@ void initAHT20() {
 // Hàm đọc dữ liệu từ cảm biến khói (MP2)
 float readSmokeSensor() {
     int rawValue = analogRead(SMOKE_SENSOR_PIN); // Đọc giá trị ADC
-    float voltage = (rawValue / 4095.0) * 3.3; // Chuyển đổi sang điện áp (3.3V tham chiếu)
+    float voltage = rawValue / 4095.0; // Chuyển đổi sang điện áp (3.3V tham chiếu)
     return voltage;
 }
 
@@ -61,11 +67,27 @@ void loop() {
     Serial.println(" V");
 
     // Kiểm tra điều kiện phát hiện khói
-    if (smokeVoltage > 2.5) { 
+    if (smokeVoltage > 0.7) { 
         Serial.println("CẢNH BÁO: Phát hiện khói!");
+        digitalWrite(BUZZER_PIN, HIGH); // Bật còi
     } else {
         Serial.println("Không khí bình thường.");
+        digitalWrite(BUZZER_PIN, LOW); // Tắt còi
     }
+    // Tạo đối tượng JSON
+    StaticJsonDocument<128> jsonDoc;
+    jsonDoc["temperature"] = temperature;
+    jsonDoc["humidity"] = humidity;
+    // Chuyển JSON thành chuỗi
+    char jsonString[128];
+    serializeJson(jsonDoc, jsonString);
 
-    delay(1000); 
+    // Gửi dữ liệu qua UART giả lập
+    mySerial.println(jsonString);
+
+    // Debug
+    Serial.print("Sent: ");
+    Serial.println(jsonString);
+
+    delay(5000); 
 }
